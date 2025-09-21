@@ -35,17 +35,21 @@ export const useTransactions = (userId) => {
       setLoading(true)
       setError(null)
 
-      // Generate a random token (in real app, this would come from DISCO API)
-      const token = generateToken()
+      // Import token validator
+      const { tokenValidator } = await import('../lib/tokenValidator.js')
+      
+      // Generate a realistic token
+      const token = tokenValidator.generateToken()
       
       const newTransaction = {
         ...transactionData,
         user_id: userId,
         token,
-        status: 'success', // In real app, this would be 'pending' initially
+        status: 'pending', // Start as pending
         created_at: new Date().toISOString()
       }
 
+      // Create transaction in database
       const { data, error } = await transactions.create(newTransaction)
       
       if (error) {
@@ -54,16 +58,73 @@ export const useTransactions = (userId) => {
         return { success: false, error }
       }
 
-      // Add to local state
-      setTransactionsList(prev => [data, ...prev])
-      toast.success('Transaction completed successfully!')
-      return { success: true, data }
+      // Simulate payment processing
+      const paymentResult = await processPayment(transactionData.amount, transactionData.payment_method)
+      
+      if (paymentResult.success) {
+        // Update transaction status to success
+        const { data: updatedTransaction, error: updateError } = await supabase
+          .from('transactions')
+          .update({ 
+            status: 'success',
+            payment_reference: paymentResult.reference,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.id)
+          .select()
+          .single()
+
+        if (updateError) {
+          console.error('Failed to update transaction status:', updateError)
+        }
+
+        // Send notification
+        const { notifications } = await import('../lib/notifications.js')
+        const user = await supabase.auth.getUser()
+        if (user.data.user) {
+          await notifications.sendTransactionNotification(user.data.user, updatedTransaction || data)
+        }
+
+        // Add to local state
+        setTransactionsList(prev => [updatedTransaction || data, ...prev])
+        toast.success('Transaction completed successfully!')
+        return { success: true, data: updatedTransaction || data }
+      } else {
+        // Update transaction status to failed
+        await supabase
+          .from('transactions')
+          .update({ 
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.id)
+
+        toast.error('Payment failed: ' + paymentResult.error)
+        return { success: false, error: paymentResult.error }
+      }
     } catch (err) {
       setError(err.message)
       toast.error('An unexpected error occurred')
       return { success: false, error: err }
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Simulate payment processing
+  const processPayment = async (amount, paymentMethod) => {
+    // Simulate different payment methods
+    switch (paymentMethod) {
+      case 'Card Payment':
+        return { success: true, reference: `CARD_${Date.now()}` }
+      case 'Bank Transfer':
+        return { success: true, reference: `BANK_${Date.now()}` }
+      case 'USSD':
+        return { success: true, reference: `USSD_${Date.now()}` }
+      case 'Wallet':
+        return { success: true, reference: `WALLET_${Date.now()}` }
+      default:
+        return { success: false, error: 'Invalid payment method' }
     }
   }
 

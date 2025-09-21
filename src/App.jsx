@@ -304,6 +304,20 @@ const PowerVendingApp = () => {
             </div>
           </div>
 
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Wallet Balance</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-3xl font-bold text-green-600">₦0.00</p>
+                <p className="text-sm text-gray-600">Available balance</p>
+              </div>
+              <button className="btn-primary">
+                <CreditCard className="w-4 h-4 inline mr-2" />
+                Top Up
+              </button>
+            </div>
+          </div>
+
           <div className="card">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Transactions</h2>
             <div className="space-y-3">

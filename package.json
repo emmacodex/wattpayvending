@@ -8,7 +8,9 @@
     "react-dom": "^18.2.0",
     "lucide-react": "^0.263.1",
     "@supabase/supabase-js": "^2.38.0",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "@stripe/stripe-js": "^2.1.11",
+    "react-query": "^3.39.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
