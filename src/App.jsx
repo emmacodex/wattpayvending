@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Phone, Mail, Eye, EyeOff, ArrowLeft, Zap, CreditCard, Clock, Receipt, MessageCircle, User, Home, History, Settings, Search, Download, Star } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useTransactions } from './hooks/useTransactions.js';
+import { useSmartMeter } from './hooks/useSmartMeter.js';
 import { supabase, discos } from './lib/supabase.js';
+import SmartMeterDashboard from './components/SmartMeterDashboard.jsx';
 
 const PowerVendingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -14,9 +16,12 @@ const PowerVendingApp = () => {
   const [discoList, setDiscoList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [authMode, setAuthMode] = useState('login');
+  const [showSmartMeter, setShowSmartMeter] = useState(false);
+  const [selectedMeter, setSelectedMeter] = useState('');
   
   const { user, profile, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { transactions, loading: transactionsLoading, createTransaction, searchTransactions } = useTransactions(user?.id);
+  const { meterData, loading: meterLoading, fetchMeterData } = useSmartMeter(selectedMeter, selectedDisco);
 
   // Fetch DISCOs from database
   useEffect(() => {
@@ -316,6 +321,64 @@ const PowerVendingApp = () => {
                 Top Up
               </button>
             </div>
+          </div>
+
+          {/* Smart Meter Card */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-800">Smart Meter</h2>
+              <button 
+                onClick={() => setShowSmartMeter(true)}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                View Details
+              </button>
+            </div>
+            
+            {meterData ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Current Balance</p>
+                    <p className="text-2xl font-bold text-gray-900">{meterData.currentBalance} units</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    meterData.status === 'low' ? 'bg-red-100 text-red-800' :
+                    meterData.status === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {meterData.status.toUpperCase()}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-blue-600">{meterData.daysRemaining}</p>
+                    <p className="text-xs text-gray-600">Days Remaining</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-green-600">{meterData.dailyAverage}</p>
+                    <p className="text-xs text-gray-600">Daily Average</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-sm text-gray-600 mb-1">Today's Consumption</p>
+                  <p className="text-lg font-semibold text-gray-900">{meterData.consumption.today} units</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Zap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">No meter connected</p>
+                <button 
+                  onClick={() => setCurrentScreen('purchase')}
+                  className="btn-primary text-sm"
+                >
+                  Connect Meter
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="card">
@@ -699,7 +762,17 @@ const PowerVendingApp = () => {
     );
   }
 
-  return null;
+  return (
+    <>
+      {showSmartMeter && (
+        <SmartMeterDashboard
+          meterNumber={selectedMeter || meterNumber}
+          discoCode={selectedDisco}
+          onClose={() => setShowSmartMeter(false)}
+        />
+      )}
+    </>
+  );
 };
 
 export default PowerVendingApp;
