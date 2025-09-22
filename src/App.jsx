@@ -23,18 +23,6 @@ const PowerVendingApp = () => {
   const [showAIAnalytics, setShowAIAnalytics] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState('');
   
-  const { user, profile, loading: authLoading, signIn, signUp, signOut } = useAuth();
-  const { transactions, loading: transactionsLoading, createTransaction, searchTransactions } = useTransactions(user?.id);
-  const { meterData, loading: meterLoading, fetchMeterData } = useSmartMeter(selectedMeter, selectedDisco);
-  const { 
-    predictions, 
-    anomalies, 
-    recommendations, 
-    modelMetrics, 
-    loading: aiLoading, 
-    generateAllInsights 
-  } = useAIPredictions(user?.id, meterData || demoMeterData);
-  
   // Demo meter data for testing
   const demoMeterData = {
     currentBalance: 245.67,
@@ -47,6 +35,18 @@ const PowerVendingApp = () => {
       thisMonth: 375.2,
     }
   };
+
+  const { user, profile, loading: authLoading, signIn, signUp, signOut } = useAuth();
+  const { transactions, loading: transactionsLoading, createTransaction, searchTransactions } = useTransactions(user?.id);
+  const { meterData, loading: meterLoading, fetchMeterData } = useSmartMeter(selectedMeter, selectedDisco);
+  const { 
+    predictions, 
+    anomalies, 
+    recommendations, 
+    modelMetrics, 
+    loading: aiLoading, 
+    generateAllInsights 
+  } = useAIPredictions(user?.id, meterData || demoMeterData);
 
   // Fetch DISCOs from database
   useEffect(() => {
