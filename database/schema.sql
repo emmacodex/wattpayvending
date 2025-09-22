@@ -89,37 +89,47 @@ ALTER TABLE consumption_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meter_alerts ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Create RLS policies for transactions
+DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
 CREATE POLICY "Users can view own transactions" ON transactions
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
 CREATE POLICY "Users can insert own transactions" ON transactions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Create RLS policies for discos (public read access)
+DROP POLICY IF EXISTS "Anyone can view active discos" ON discos;
 CREATE POLICY "Anyone can view active discos" ON discos
   FOR SELECT USING (is_active = true);
 
 -- Create RLS policies for smart_meters
+DROP POLICY IF EXISTS "Users can view own smart meters" ON smart_meters;
 CREATE POLICY "Users can view own smart meters" ON smart_meters
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own smart meters" ON smart_meters;
 CREATE POLICY "Users can insert own smart meters" ON smart_meters
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own smart meters" ON smart_meters;
 CREATE POLICY "Users can update own smart meters" ON smart_meters
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Create RLS policies for consumption_records
+DROP POLICY IF EXISTS "Users can view own consumption records" ON consumption_records;
 CREATE POLICY "Users can view own consumption records" ON consumption_records
   FOR SELECT USING (
     EXISTS (
@@ -129,6 +139,7 @@ CREATE POLICY "Users can view own consumption records" ON consumption_records
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own consumption records" ON consumption_records;
 CREATE POLICY "Users can insert own consumption records" ON consumption_records
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -139,12 +150,15 @@ CREATE POLICY "Users can insert own consumption records" ON consumption_records
   );
 
 -- Create RLS policies for meter_alerts
+DROP POLICY IF EXISTS "Users can view own meter alerts" ON meter_alerts;
 CREATE POLICY "Users can view own meter alerts" ON meter_alerts
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own meter alerts" ON meter_alerts;
 CREATE POLICY "Users can insert own meter alerts" ON meter_alerts
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own meter alerts" ON meter_alerts;
 CREATE POLICY "Users can update own meter alerts" ON meter_alerts
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -189,10 +203,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions;
 CREATE TRIGGER update_transactions_updated_at
   BEFORE UPDATE ON transactions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -5,6 +5,7 @@ import { useTransactions } from './hooks/useTransactions.js';
 import { useSmartMeter } from './hooks/useSmartMeter.js';
 import { supabase, discos } from './lib/supabase.js';
 import SmartMeterDashboard from './components/SmartMeterDashboard.jsx';
+import SmartNotifications from './components/SmartNotifications.jsx';
 
 const PowerVendingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -22,6 +23,19 @@ const PowerVendingApp = () => {
   const { user, profile, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { transactions, loading: transactionsLoading, createTransaction, searchTransactions } = useTransactions(user?.id);
   const { meterData, loading: meterLoading, fetchMeterData } = useSmartMeter(selectedMeter, selectedDisco);
+  
+  // Demo meter data for testing
+  const demoMeterData = {
+    currentBalance: 245.67,
+    dailyAverage: 12.5,
+    daysRemaining: 19,
+    status: 'good',
+    consumption: {
+      today: 8.5,
+      thisWeek: 87.3,
+      thisMonth: 375.2,
+    }
+  };
 
   // Fetch DISCOs from database
   useEffect(() => {
@@ -328,43 +342,50 @@ const PowerVendingApp = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-800">Smart Meter</h2>
               <button 
-                onClick={() => setShowSmartMeter(true)}
+                onClick={() => {
+                  if (meterData) {
+                    setShowSmartMeter(true);
+                  } else {
+                    // Show demo data for testing
+                    setShowSmartMeter(true);
+                  }
+                }}
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
                 View Details
               </button>
             </div>
             
-            {meterData ? (
+            {meterData || selectedMeter ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Current Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">{meterData.currentBalance} units</p>
+                    <p className="text-2xl font-bold text-gray-900">{(meterData || demoMeterData).currentBalance} units</p>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    meterData.status === 'low' ? 'bg-red-100 text-red-800' :
-                    meterData.status === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    (meterData || demoMeterData).status === 'low' ? 'bg-red-100 text-red-800' :
+                    (meterData || demoMeterData).status === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-green-100 text-green-800'
                   }`}>
-                    {meterData.status.toUpperCase()}
+                    {(meterData || demoMeterData).status.toUpperCase()}
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
-                    <p className="text-lg font-bold text-blue-600">{meterData.daysRemaining}</p>
+                    <p className="text-lg font-bold text-blue-600">{(meterData || demoMeterData).daysRemaining}</p>
                     <p className="text-xs text-gray-600">Days Remaining</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-bold text-green-600">{meterData.dailyAverage}</p>
+                    <p className="text-lg font-bold text-green-600">{(meterData || demoMeterData).dailyAverage}</p>
                     <p className="text-xs text-gray-600">Daily Average</p>
                   </div>
                 </div>
                 
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-sm text-gray-600 mb-1">Today's Consumption</p>
-                  <p className="text-lg font-semibold text-gray-900">{meterData.consumption.today} units</p>
+                  <p className="text-lg font-semibold text-gray-900">{(meterData || demoMeterData).consumption.today} units</p>
                 </div>
               </div>
             ) : (
@@ -372,7 +393,12 @@ const PowerVendingApp = () => {
                 <Zap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 mb-4">No meter connected</p>
                 <button 
-                  onClick={() => setCurrentScreen('purchase')}
+                  onClick={() => {
+                    // Set demo meter data for testing
+                    setSelectedMeter('12345678901');
+                    setSelectedDisco('Eko Electricity Distribution Company');
+                    setShowSmartMeter(true);
+                  }}
                   className="btn-primary text-sm"
                 >
                   Connect Meter
@@ -404,6 +430,9 @@ const PowerVendingApp = () => {
         </div>
 
         <BottomNav />
+        
+        {/* Smart Notifications */}
+        <SmartNotifications meterData={meterData || demoMeterData} />
       </div>
     );
   }
