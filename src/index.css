@@ -17,19 +17,27 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200;
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm sm:text-base min-h-[44px] flex items-center justify-center;
   }
   
   .btn-secondary {
-    @apply border border-blue-600 text-blue-600 py-3 px-6 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200;
+    @apply border border-blue-600 text-blue-600 py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 text-sm sm:text-base min-h-[44px] flex items-center justify-center;
+  }
+
+  .btn-small {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white py-1.5 sm:py-2 px-3 sm:px-4 rounded-md font-medium shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm min-h-[36px] flex items-center justify-center;
+  }
+
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base min-h-[44px] flex items-center justify-center;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6;
+    @apply bg-white rounded-xl shadow-lg p-4 sm:p-6;
   }
   
   .input-field {
-    @apply w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    @apply w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base;
   }
 }
 
@@ -46,6 +54,44 @@
     to {
       transform: translateX(0);
       opacity: 1;
+    }
+  }
+
+  /* Mobile optimizations for AI Dashboard */
+  .ai-dashboard {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .ai-dashboard::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .ai-dashboard::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+
+  .ai-dashboard::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+  }
+
+  .ai-dashboard::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Touch-friendly buttons */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive text scaling */
+  @media (max-width: 640px) {
+    .responsive-text {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
     }
   }
 }

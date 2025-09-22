@@ -129,35 +129,35 @@ const PowerVendingApp = () => {
 
   // Bottom Navigation Component
   const BottomNav = () => (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 shadow-lg">
       <div className="flex justify-around">
         <button 
-          className={`flex flex-col items-center p-2 ${currentScreen === 'dashboard' ? 'text-blue-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'dashboard' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
           onClick={() => setCurrentScreen('dashboard')}
         >
-          <Home className="w-5 h-5" />
-          <span className="text-xs mt-1">Home</span>
+          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-xs mt-1 font-medium">Home</span>
         </button>
         <button 
-          className={`flex flex-col items-center p-2 ${currentScreen === 'history' ? 'text-blue-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'history' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
           onClick={() => setCurrentScreen('history')}
         >
-          <History className="w-5 h-5" />
-          <span className="text-xs mt-1">History</span>
+          <History className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-xs mt-1 font-medium">History</span>
         </button>
         <button 
-          className={`flex flex-col items-center p-2 ${currentScreen === 'support' ? 'text-blue-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'support' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
           onClick={() => setCurrentScreen('support')}
         >
-          <MessageCircle className="w-5 h-5" />
-          <span className="text-xs mt-1">Support</span>
+          <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-xs mt-1 font-medium">Support</span>
         </button>
         <button 
-          className={`flex flex-col items-center p-2 ${currentScreen === 'profile' ? 'text-blue-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'profile' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
           onClick={() => setCurrentScreen('profile')}
         >
-          <User className="w-5 h-5" />
-          <span className="text-xs mt-1">Profile</span>
+          <User className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-xs mt-1 font-medium">Profile</span>
         </button>
       </div>
     </div>
@@ -322,16 +322,33 @@ const PowerVendingApp = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg shadow p-4 text-center">
+            <button 
+              className="bg-white rounded-lg shadow p-4 text-center hover:shadow-md transition-all min-h-[120px] flex flex-col items-center justify-center"
+              onClick={() => {
+                if (transactions.length > 0) {
+                  // Repeat last transaction
+                  const lastTransaction = transactions[0];
+                  setSelectedDisco(lastTransaction.disco_name);
+                  setMeterNumber(lastTransaction.meter_number);
+                  setAmount(lastTransaction.amount.toString());
+                  setCurrentScreen('purchase');
+                } else {
+                  alert('No previous transactions to repeat');
+                }
+              }}
+            >
               <Clock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
               <h3 className="font-semibold text-gray-800">Quick Buy</h3>
               <p className="text-sm text-gray-600">Repeat last purchase</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
+            </button>
+            <button 
+              className="bg-white rounded-lg shadow p-4 text-center hover:shadow-md transition-all min-h-[120px] flex flex-col items-center justify-center"
+              onClick={() => setCurrentScreen('history')}
+            >
               <Receipt className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <h3 className="font-semibold text-gray-800">Recent</h3>
               <p className="text-sm text-gray-600">View transactions</p>
-            </div>
+            </button>
           </div>
 
           {/* AI Analytics Card */}
@@ -357,9 +374,10 @@ const PowerVendingApp = () => {
               </div>
               <button 
                 onClick={() => setShowAIAnalytics(true)}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg font-semibold transition-all"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold transition-all text-sm sm:text-base min-h-[44px] flex items-center justify-center"
               >
-                View Analytics
+                <span className="hidden sm:inline">View Analytics</span>
+                <span className="sm:hidden">Analytics</span>
               </button>
             </div>
           </div>
@@ -371,9 +389,16 @@ const PowerVendingApp = () => {
                 <p className="text-3xl font-bold text-green-600">₦0.00</p>
                 <p className="text-sm text-gray-600">Available balance</p>
               </div>
-              <button className="btn-primary">
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  // TODO: Implement wallet top-up functionality
+                  alert('Wallet top-up feature coming soon!');
+                }}
+              >
                 <CreditCard className="w-4 h-4 inline mr-2" />
-                Top Up
+                <span className="hidden sm:inline">Top Up</span>
+                <span className="sm:hidden">Top Up</span>
               </button>
             </div>
           </div>
@@ -391,9 +416,10 @@ const PowerVendingApp = () => {
                     setShowSmartMeter(true);
                   }
                 }}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded-md hover:bg-blue-50 transition-all"
               >
-                View Details
+                <span className="hidden sm:inline">View Details</span>
+                <span className="sm:hidden">Details</span>
               </button>
             </div>
             
@@ -440,7 +466,7 @@ const PowerVendingApp = () => {
                     setSelectedDisco('Eko Electricity Distribution Company');
                     setShowSmartMeter(true);
                   }}
-                  className="btn-primary text-sm"
+                  className="btn-primary text-sm w-full sm:w-auto"
                 >
                   Connect Meter
                 </button>
