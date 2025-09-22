@@ -3,9 +3,11 @@ import { Phone, Mail, Eye, EyeOff, ArrowLeft, Zap, CreditCard, Clock, Receipt, M
 import { useAuth } from './contexts/AuthContext.jsx';
 import { useTransactions } from './hooks/useTransactions.js';
 import { useSmartMeter } from './hooks/useSmartMeter.js';
+import { useAIPredictions } from './hooks/useAIPredictions.js';
 import { supabase, discos } from './lib/supabase.js';
 import SmartMeterDashboard from './components/SmartMeterDashboard.jsx';
 import SmartNotifications from './components/SmartNotifications.jsx';
+import AIAnalyticsDashboard from './components/AIAnalyticsDashboard.jsx';
 
 const PowerVendingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -18,11 +20,20 @@ const PowerVendingApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [authMode, setAuthMode] = useState('login');
   const [showSmartMeter, setShowSmartMeter] = useState(false);
+  const [showAIAnalytics, setShowAIAnalytics] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState('');
   
   const { user, profile, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const { transactions, loading: transactionsLoading, createTransaction, searchTransactions } = useTransactions(user?.id);
   const { meterData, loading: meterLoading, fetchMeterData } = useSmartMeter(selectedMeter, selectedDisco);
+  const { 
+    predictions, 
+    anomalies, 
+    recommendations, 
+    modelMetrics, 
+    loading: aiLoading, 
+    generateAllInsights 
+  } = useAIPredictions(user?.id, meterData || demoMeterData);
   
   // Demo meter data for testing
   const demoMeterData = {
@@ -320,6 +331,36 @@ const PowerVendingApp = () => {
               <Receipt className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <h3 className="font-semibold text-gray-800">Recent</h3>
               <p className="text-sm text-gray-600">View transactions</p>
+            </div>
+          </div>
+
+          {/* AI Analytics Card */}
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold mb-2">🤖 AI Analytics</h2>
+                <p className="text-purple-100 text-sm mb-4">Get intelligent insights and predictions</p>
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    <span>Model Trained</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                    <span>{predictions.length} Predictions</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
+                    <span>{recommendations.length} Tips</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAIAnalytics(true)}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg font-semibold transition-all"
+              >
+                View Analytics
+              </button>
             </div>
           </div>
 
@@ -798,6 +839,18 @@ const PowerVendingApp = () => {
           meterNumber={selectedMeter || meterNumber}
           discoCode={selectedDisco}
           onClose={() => setShowSmartMeter(false)}
+        />
+      )}
+      
+      {showAIAnalytics && (
+        <AIAnalyticsDashboard
+          predictions={predictions}
+          anomalies={anomalies}
+          recommendations={recommendations}
+          modelMetrics={modelMetrics}
+          loading={aiLoading}
+          onRefresh={generateAllInsights}
+          onClose={() => setShowAIAnalytics(false)}
         />
       )}
     </>

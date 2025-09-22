@@ -69,6 +69,45 @@ CREATE TABLE IF NOT EXISTS meter_alerts (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create ai_predictions table
+CREATE TABLE IF NOT EXISTS ai_predictions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  meter_id UUID REFERENCES smart_meters(id) ON DELETE CASCADE NOT NULL,
+  prediction_date DATE NOT NULL,
+  predicted_consumption DECIMAL(10,2) NOT NULL,
+  confidence_score DECIMAL(3,2) NOT NULL,
+  factors JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create ai_recommendations table
+CREATE TABLE IF NOT EXISTS ai_recommendations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  meter_id UUID REFERENCES smart_meters(id) ON DELETE CASCADE NOT NULL,
+  recommendation_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  action TEXT,
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high')),
+  estimated_savings TEXT,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create ai_model_metrics table
+CREATE TABLE IF NOT EXISTS ai_model_metrics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  model_version TEXT NOT NULL,
+  accuracy_score DECIMAL(3,2) NOT NULL,
+  data_points INTEGER NOT NULL,
+  last_trained TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  training_duration INTEGER, -- in seconds
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
@@ -79,6 +118,11 @@ CREATE INDEX IF NOT EXISTS idx_smart_meters_meter_number ON smart_meters(meter_n
 CREATE INDEX IF NOT EXISTS idx_consumption_records_meter_id ON consumption_records(meter_id);
 CREATE INDEX IF NOT EXISTS idx_consumption_records_reading_date ON consumption_records(reading_date);
 CREATE INDEX IF NOT EXISTS idx_meter_alerts_user_id ON meter_alerts(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_predictions_user_id ON ai_predictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_predictions_prediction_date ON ai_predictions(prediction_date);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_user_id ON ai_recommendations(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_created_at ON ai_recommendations(created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_model_metrics_user_id ON ai_model_metrics(user_id);
 
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -87,6 +131,9 @@ ALTER TABLE discos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE smart_meters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE consumption_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meter_alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_predictions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_recommendations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_model_metrics ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for profiles
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
@@ -161,6 +208,37 @@ CREATE POLICY "Users can insert own meter alerts" ON meter_alerts
 DROP POLICY IF EXISTS "Users can update own meter alerts" ON meter_alerts;
 CREATE POLICY "Users can update own meter alerts" ON meter_alerts
   FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create RLS policies for ai_predictions
+DROP POLICY IF EXISTS "Users can view own ai predictions" ON ai_predictions;
+CREATE POLICY "Users can view own ai predictions" ON ai_predictions
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own ai predictions" ON ai_predictions;
+CREATE POLICY "Users can insert own ai predictions" ON ai_predictions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Create RLS policies for ai_recommendations
+DROP POLICY IF EXISTS "Users can view own ai recommendations" ON ai_recommendations;
+CREATE POLICY "Users can view own ai recommendations" ON ai_recommendations
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own ai recommendations" ON ai_recommendations;
+CREATE POLICY "Users can insert own ai recommendations" ON ai_recommendations
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own ai recommendations" ON ai_recommendations;
+CREATE POLICY "Users can update own ai recommendations" ON ai_recommendations
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create RLS policies for ai_model_metrics
+DROP POLICY IF EXISTS "Users can view own ai model metrics" ON ai_model_metrics;
+CREATE POLICY "Users can view own ai model metrics" ON ai_model_metrics
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own ai model metrics" ON ai_model_metrics;
+CREATE POLICY "Users can insert own ai model metrics" ON ai_model_metrics
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Create function to automatically create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
