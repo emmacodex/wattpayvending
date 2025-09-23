@@ -438,8 +438,14 @@ const PowerVendingApp = () => {
               </div>
               <button 
                 className="btn-primary"
-                onClick={() => setShowWalletTopUp(true)}
+                onClick={() => {
+                  console.log('Top Up button clicked');
+                  console.log('Current showWalletTopUp state:', showWalletTopUp);
+                  setShowWalletTopUp(true);
+                  console.log('Set showWalletTopUp to true');
+                }}
                 disabled={walletLoading}
+                style={{ border: '2px solid red' }} // Temporary visual indicator
               >
                 <CreditCard className="w-4 h-4 inline mr-2" />
                 <span className="hidden sm:inline">Top Up</span>
@@ -962,15 +968,18 @@ const PowerVendingApp = () => {
       )}
       
       {showWalletTopUp && (
-        <WalletTopUp
-          onClose={() => setShowWalletTopUp(false)}
-          onSuccess={(result) => {
-            setShowWalletTopUp(false);
-            // Success is already handled by the toast in the hook
-          }}
-          loading={walletLoading}
-          addFunds={addFunds}
-        />
+        <>
+          {console.log('Rendering WalletTopUp component, showWalletTopUp:', showWalletTopUp)}
+          <WalletTopUp
+            onClose={() => setShowWalletTopUp(false)}
+            onSuccess={(result) => {
+              setShowWalletTopUp(false);
+              // Success is already handled by the toast in the hook
+            }}
+            loading={walletLoading}
+            addFunds={addFunds}
+          />
+        </>
       )}
       
       {showComplaintForm && (

@@ -6,6 +6,8 @@ const WalletTopUp = ({ onClose, onSuccess, loading, addFunds }) => {
   const [paymentMethod, setPaymentMethod] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
 
+  console.log('WalletTopUp component rendered')
+
   const quickAmounts = ['₦5,000', '₦10,000', '₦20,000', '₦50,000']
 
   const paymentMethods = [
@@ -59,8 +61,8 @@ const WalletTopUp = ({ onClose, onSuccess, loading, addFunds }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]" style={{ border: '5px solid blue' }}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ border: '3px solid green' }}>
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-4 sm:p-6 rounded-t-xl">
           <div className="flex items-center justify-between">
