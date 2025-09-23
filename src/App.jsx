@@ -439,13 +439,18 @@ const PowerVendingApp = () => {
               <button 
                 className="btn-primary"
                 onClick={() => {
-                  console.log('Top Up button clicked');
+                  console.log('TOP UP BUTTON CLICKED!');
                   console.log('Current showWalletTopUp state:', showWalletTopUp);
+                  console.log('Setting showWalletTopUp to true');
                   setShowWalletTopUp(true);
-                  console.log('Set showWalletTopUp to true');
+                  console.log('showWalletTopUp should now be true');
+                  
+                  // Force a re-render test
+                  setTimeout(() => {
+                    console.log('After 100ms, showWalletTopUp state:', showWalletTopUp);
+                  }, 100);
                 }}
                 disabled={walletLoading}
-                style={{ border: '2px solid red' }} // Temporary visual indicator
               >
                 <CreditCard className="w-4 h-4 inline mr-2" />
                 <span className="hidden sm:inline">Top Up</span>
@@ -911,10 +916,21 @@ const PowerVendingApp = () => {
 
           <button 
             onClick={async () => {
-              await signOut();
-              setCurrentScreen('auth');
+              console.log('Logout button clicked');
+              try {
+                const result = await signOut();
+                console.log('SignOut result:', result);
+                if (result.success) {
+                  setCurrentScreen('auth');
+                  console.log('Redirected to auth screen');
+                } else {
+                  console.error('Logout failed:', result.error);
+                }
+              } catch (error) {
+                console.error('Logout error:', error);
+              }
             }}
-            className="w-full bg-red-50 text-red-600 py-3 rounded-lg font-semibold border border-red-200"
+            className="w-full bg-red-50 text-red-600 py-3 rounded-lg font-semibold border border-red-200 hover:bg-red-100 transition-colors"
           >
             Logout
           </button>
@@ -967,19 +983,281 @@ const PowerVendingApp = () => {
         />
       )}
       
-      {showWalletTopUp && (
-        <>
-          {console.log('Rendering WalletTopUp component, showWalletTopUp:', showWalletTopUp)}
-          <WalletTopUp
-            onClose={() => setShowWalletTopUp(false)}
-            onSuccess={(result) => {
-              setShowWalletTopUp(false);
-              // Success is already handled by the toast in the hook
+      {/* Debug info - always visible */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        backgroundColor: 'red',
+        color: 'white',
+        padding: '20px',
+        borderRadius: '10px',
+        zIndex: 99999,
+        fontSize: '16px',
+        fontWeight: 'bold',
+        border: '3px solid yellow'
+      }}>
+        CHANGES APPLIED <br/>
+        showWalletTopUp: {showWalletTopUp ? 'TRUE' : 'FALSE'}
+      </div>
+
+      {/* Admin Setup Button */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        left: '10px',
+        backgroundColor: 'blue',
+        color: 'white',
+        padding: '15px',
+        borderRadius: '10px',
+        zIndex: 99999,
+        fontSize: '14px'
+      }}>
+        <button 
+          onClick={async () => {
+            console.log('Creating admin user...');
+            const result = await adminSetup.createDemoAdmin('admin@powervend.com', 'admin123', 'admin');
+            if (result.success) {
+              alert('✅ Admin user created! Email: admin@powervend.com, Password: admin123');
+            } else {
+              alert('❌ Error: ' + result.error);
+            }
+          }}
+          style={{
+            backgroundColor: 'white',
+            color: 'blue',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            marginBottom: '10px',
+            display: 'block',
+            width: '100%'
+          }}
+        >
+          Create Admin User
+        </button>
+        
+        <button 
+          onClick={async () => {
+            console.log('Test logout clicked');
+            try {
+              console.log('Calling signOut...');
+              const result = await signOut();
+              console.log('Test logout result:', result);
+              if (result && result.success) {
+                console.log('Logout successful, redirecting...');
+                setCurrentScreen('auth');
+                alert('✅ Logout successful!');
+              } else {
+                console.log('Logout failed:', result);
+                alert('❌ Logout failed: ' + (result?.error || 'Unknown error'));
+              }
+            } catch (error) {
+              console.error('Test logout error:', error);
+              alert('❌ Logout error: ' + error.message);
+            }
+          }}
+          style={{
+            backgroundColor: 'red',
+            color: 'white',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            width: '100%',
+            marginBottom: '10px'
+          }}
+        >
+          Test Logout
+        </button>
+        
+        <button 
+          onClick={async () => {
+            console.log('Direct Supabase logout clicked');
+            try {
+              console.log('Calling supabase.auth.signOut() directly...');
+              const { error } = await supabase.auth.signOut();
+              if (error) {
+                console.error('Direct logout error:', error);
+                alert('❌ Direct logout failed: ' + error.message);
+              } else {
+                console.log('Direct logout successful, redirecting...');
+                setCurrentScreen('auth');
+                alert('✅ Direct logout successful!');
+              }
+            } catch (error) {
+              console.error('Direct logout error:', error);
+              alert('❌ Direct logout error: ' + error.message);
+            }
+          }}
+          style={{
+            backgroundColor: 'orange',
+            color: 'white',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            width: '100%'
+          }}
+        >
+          Direct Logout
+        </button>
+      </div>
+
+      {/* Force show modal for testing */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 255, 0, 0.8)',
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '30px',
+          maxWidth: '500px',
+          width: '100%',
+          border: '5px solid red'
+        }}>
+          <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>🧪 TEST MODAL - ALWAYS VISIBLE</h2>
+          <p>This modal should always be visible to test if modals work at all.</p>
+          <button 
+            onClick={() => setShowWalletTopUp(false)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: 'red',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              marginTop: '20px'
             }}
-            loading={walletLoading}
-            addFunds={addFunds}
-          />
-        </>
+          >
+            Close Test Modal
+          </button>
+        </div>
+      </div>
+
+      {showWalletTopUp && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 0, 0, 0.9)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            border: '3px solid blue'
+          }}>
+            <h2 style={{ marginBottom: '20px', color: '#333', fontSize: '24px' }}>💰 Top Up Wallet</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Amount (₦):</label>
+              <input 
+                type="number" 
+                placeholder="Enter amount (e.g., 5000)"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #ccc',
+                  borderRadius: '8px',
+                  fontSize: '18px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Payment Method:</label>
+              <select style={{
+                width: '100%',
+                padding: '12px',
+                border: '2px solid #ccc',
+                borderRadius: '8px',
+                fontSize: '18px',
+                boxSizing: 'border-box'
+              }}>
+                <option value="">Select payment method</option>
+                <option value="card">💳 Card Payment</option>
+                <option value="bank">🏦 Bank Transfer</option>
+                <option value="ussd">📱 USSD (*737#, *966#)</option>
+                <option value="mobile">📲 Mobile Money</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={() => {
+                  console.log('Cancel clicked');
+                  setShowWalletTopUp(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '15px',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ❌ Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  console.log('Proceed to Pay clicked');
+                  alert('🎉 Payment simulation - Wallet topped up successfully!');
+                  setShowWalletTopUp(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '15px',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ✅ Proceed to Pay
+              </button>
+            </div>
+            
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                <strong>Note:</strong> This is a demo. In a real app, you would be redirected to a secure payment gateway.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
       
       {showComplaintForm && (
