@@ -4,10 +4,16 @@ import { useAuth } from './contexts/AuthContext.jsx';
 import { useTransactions } from './hooks/useTransactions.js';
 import { useSmartMeter } from './hooks/useSmartMeter.js';
 import { useAIPredictions } from './hooks/useAIPredictions.js';
+import { useWallet } from './hooks/useWallet.js';
+import { useAdmin, useAdminTransactions, useAdminComplaints } from './hooks/useAdmin.js';
+import { useCustomerComplaints } from './hooks/useCustomerComplaints.js';
 import { supabase, discos } from './lib/supabase.js';
 import SmartMeterDashboard from './components/SmartMeterDashboard.jsx';
 import SmartNotifications from './components/SmartNotifications.jsx';
 import AIAnalyticsDashboard from './components/AIAnalyticsDashboard.jsx';
+import WalletTopUp from './components/WalletTopUp.jsx';
+import AdminDashboard from './components/AdminDashboard.jsx';
+import CustomerComplaintForm from './components/CustomerComplaintForm.jsx';
 
 const PowerVendingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -21,6 +27,8 @@ const PowerVendingApp = () => {
   const [authMode, setAuthMode] = useState('login');
   const [showSmartMeter, setShowSmartMeter] = useState(false);
   const [showAIAnalytics, setShowAIAnalytics] = useState(false);
+  const [showWalletTopUp, setShowWalletTopUp] = useState(false);
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState('');
   
   // Demo meter data for testing
@@ -47,6 +55,24 @@ const PowerVendingApp = () => {
     loading: aiLoading, 
     generateAllInsights 
   } = useAIPredictions(user?.id, meterData || demoMeterData);
+  const { balance, loading: walletLoading, addFunds } = useWallet(user?.id);
+  const { isAdmin, adminRole } = useAdmin(user?.id);
+  const { 
+    transactions: adminTransactions, 
+    stats: transactionStats, 
+    loading: adminTransactionsLoading, 
+    fetchAllTransactions, 
+    updateTransactionStatus 
+  } = useAdminTransactions(user?.id);
+  const { 
+    complaints: adminComplaints, 
+    stats: complaintStats, 
+    loading: adminComplaintsLoading, 
+    fetchAllComplaints, 
+    updateComplaintStatus, 
+    assignComplaint 
+  } = useAdminComplaints(user?.id);
+  const { submitComplaint } = useCustomerComplaints(user?.id);
 
   // Fetch DISCOs from database
   useEffect(() => {
@@ -129,7 +155,7 @@ const PowerVendingApp = () => {
 
   // Bottom Navigation Component
   const BottomNav = () => (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 shadow-lg z-50">
       <div className="flex justify-around">
         <button 
           className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'dashboard' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
@@ -159,6 +185,15 @@ const PowerVendingApp = () => {
           <User className="w-5 h-5 sm:w-6 sm:h-6" />
           <span className="text-xs mt-1 font-medium">Profile</span>
         </button>
+        {isAdmin && (
+          <button 
+            className={`flex flex-col items-center p-2 sm:p-3 min-h-[60px] sm:min-h-[56px] ${currentScreen === 'admin' ? 'text-blue-600' : 'text-gray-400'} hover:text-blue-500 transition-colors`}
+            onClick={() => setCurrentScreen('admin')}
+          >
+            <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-xs mt-1 font-medium">Admin</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -373,7 +408,13 @@ const PowerVendingApp = () => {
                 </div>
               </div>
               <button 
-                onClick={() => setShowAIAnalytics(true)}
+                onClick={() => {
+                  setShowAIAnalytics(true);
+                  // Generate insights when opening the dashboard
+                  if (predictions.length === 0) {
+                    generateAllInsights();
+                  }
+                }}
                 className="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold transition-all text-sm sm:text-base min-h-[44px] flex items-center justify-center"
               >
                 <span className="hidden sm:inline">View Analytics</span>
@@ -386,15 +427,19 @@ const PowerVendingApp = () => {
             <h2 className="text-lg font-bold text-gray-800 mb-4">Wallet Balance</h2>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-3xl font-bold text-green-600">₦0.00</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {walletLoading ? (
+                    <div className="animate-pulse">₦---</div>
+                  ) : (
+                    `₦${balance.toLocaleString()}`
+                  )}
+                </p>
                 <p className="text-sm text-gray-600">Available balance</p>
               </div>
               <button 
                 className="btn-primary"
-                onClick={() => {
-                  // TODO: Implement wallet top-up functionality
-                  alert('Wallet top-up feature coming soon!');
-                }}
+                onClick={() => setShowWalletTopUp(true)}
+                disabled={walletLoading}
               >
                 <CreditCard className="w-4 h-4 inline mr-2" />
                 <span className="hidden sm:inline">Top Up</span>
@@ -575,17 +620,30 @@ const PowerVendingApp = () => {
               <h2 className="text-lg font-bold text-gray-800 mb-4">Payment Method</h2>
               <div className="space-y-3">
                 {['Card Payment', 'Bank Transfer', 'USSD', 'Wallet'].map((method) => (
-                  <label key={method} className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <label key={method} className={`flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 ${
+                    method === 'Wallet' && balance < parseFloat(amount) ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}>
                     <input 
                       type="radio" 
                       name="paymentMethod" 
                       value={method}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="mr-3"
+                      disabled={method === 'Wallet' && balance < parseFloat(amount)}
                       required
                     />
                     <CreditCard className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="font-medium">{method}</span>
+                    <div className="flex-1">
+                      <span className="font-medium">{method}</span>
+                      {method === 'Wallet' && (
+                        <p className="text-sm text-gray-600">
+                          Balance: ₦{balance.toLocaleString()}
+                          {balance < parseFloat(amount) && (
+                            <span className="text-red-600 ml-2">(Insufficient funds)</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
                   </label>
                 ))}
               </div>
@@ -725,11 +783,14 @@ const PowerVendingApp = () => {
           <div className="card">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Get Help</h2>
             <div className="space-y-4">
-              <button className="w-full flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <button 
+                onClick={() => setShowComplaintForm(true)}
+                className="w-full flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
                 <MessageCircle className="w-6 h-6 text-blue-600 mr-4" />
                 <div className="text-left">
-                  <p className="font-semibold">Live Chat</p>
-                  <p className="text-sm text-gray-600">Chat with our support team</p>
+                  <p className="font-semibold">Submit Complaint</p>
+                  <p className="text-sm text-gray-600">Report an issue or problem</p>
                 </div>
               </button>
               <button className="w-full flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
@@ -858,6 +919,24 @@ const PowerVendingApp = () => {
     );
   }
 
+  // Admin Screen
+  if (currentScreen === 'admin' && isAdmin) {
+    return (
+      <AdminDashboard
+        transactions={adminTransactions}
+        complaints={adminComplaints}
+        transactionStats={transactionStats}
+        complaintStats={complaintStats}
+        loading={adminTransactionsLoading || adminComplaintsLoading}
+        onRefreshTransactions={fetchAllTransactions}
+        onRefreshComplaints={fetchAllComplaints}
+        onUpdateTransactionStatus={updateTransactionStatus}
+        onUpdateComplaintStatus={updateComplaintStatus}
+        onAssignComplaint={assignComplaint}
+      />
+    );
+  }
+
   return (
     <>
       {showSmartMeter && (
@@ -876,7 +955,29 @@ const PowerVendingApp = () => {
           modelMetrics={modelMetrics}
           loading={aiLoading}
           onRefresh={generateAllInsights}
-          onClose={() => setShowAIAnalytics(false)}
+          onClose={() => {
+            setShowAIAnalytics(false);
+          }}
+        />
+      )}
+      
+      {showWalletTopUp && (
+        <WalletTopUp
+          onClose={() => setShowWalletTopUp(false)}
+          onSuccess={(result) => {
+            setShowWalletTopUp(false);
+            // Success is already handled by the toast in the hook
+          }}
+          loading={walletLoading}
+          addFunds={addFunds}
+        />
+      )}
+      
+      {showComplaintForm && (
+        <CustomerComplaintForm
+          onClose={() => setShowComplaintForm(false)}
+          onSubmit={submitComplaint}
+          userTransactions={transactions}
         />
       )}
     </>

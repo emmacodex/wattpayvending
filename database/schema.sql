@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS consumption_records (
   meter_id UUID REFERENCES smart_meters(id) ON DELETE CASCADE NOT NULL,
   consumption DECIMAL(10,2) NOT NULL,
   reading_date DATE NOT NULL,
+  metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -280,6 +281,112 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Create customer_complaints table
+CREATE TABLE IF NOT EXISTS customer_complaints (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL,
+  complaint_type TEXT NOT NULL CHECK (complaint_type IN ('payment_issue', 'token_not_working', 'wrong_amount', 'service_issue', 'other')),
+  subject TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+  admin_notes TEXT,
+  resolution TEXT,
+  assigned_admin_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Create admin_users table
+CREATE TABLE IF NOT EXISTS admin_users (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'support_agent')),
+  permissions JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create admin_activity_log table
+CREATE TABLE IF NOT EXISTS admin_activity_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  action TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id UUID NOT NULL,
+  details JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_customer_complaints_user_id ON customer_complaints(user_id);
+CREATE INDEX IF NOT EXISTS idx_customer_complaints_status ON customer_complaints(status);
+CREATE INDEX IF NOT EXISTS idx_customer_complaints_priority ON customer_complaints(priority);
+CREATE INDEX IF NOT EXISTS idx_customer_complaints_created_at ON customer_complaints(created_at);
+CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role);
+CREATE INDEX IF NOT EXISTS idx_admin_activity_log_admin_id ON admin_activity_log(admin_id);
+CREATE INDEX IF NOT EXISTS idx_admin_activity_log_created_at ON admin_activity_log(created_at);
+
+-- Enable RLS for new tables
+ALTER TABLE customer_complaints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_activity_log ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for customer_complaints
+DROP POLICY IF EXISTS "Admins can view all complaints" ON customer_complaints;
+CREATE POLICY "Admins can view all complaints" ON customer_complaints
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM admin_users 
+      WHERE admin_users.id = auth.uid() 
+      AND admin_users.is_active = true
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can view own complaints" ON customer_complaints;
+CREATE POLICY "Users can view own complaints" ON customer_complaints
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own complaints" ON customer_complaints;
+CREATE POLICY "Users can insert own complaints" ON customer_complaints
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can update complaints" ON customer_complaints;
+CREATE POLICY "Admins can update complaints" ON customer_complaints
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM admin_users 
+      WHERE admin_users.id = auth.uid() 
+      AND admin_users.is_active = true
+    )
+  );
+
+-- Create RLS policies for admin_users
+DROP POLICY IF EXISTS "Admins can view admin users" ON admin_users;
+CREATE POLICY "Admins can view admin users" ON admin_users
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM admin_users 
+      WHERE admin_users.id = auth.uid() 
+      AND admin_users.is_active = true
+    )
+  );
+
+-- Create RLS policies for admin_activity_log
+DROP POLICY IF EXISTS "Admins can view activity logs" ON admin_activity_log;
+CREATE POLICY "Admins can view activity logs" ON admin_activity_log
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM admin_users 
+      WHERE admin_users.id = auth.uid() 
+      AND admin_users.is_active = true
+    )
+  );
+
 -- Create triggers for updated_at
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
@@ -289,4 +396,14 @@ CREATE TRIGGER update_profiles_updated_at
 DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions;
 CREATE TRIGGER update_transactions_updated_at
   BEFORE UPDATE ON transactions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_customer_complaints_updated_at ON customer_complaints;
+CREATE TRIGGER update_customer_complaints_updated_at
+  BEFORE UPDATE ON customer_complaints
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_admin_users_updated_at ON admin_users;
+CREATE TRIGGER update_admin_users_updated_at
+  BEFORE UPDATE ON admin_users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

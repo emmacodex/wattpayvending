@@ -23,9 +23,10 @@ export const useAIPredictions = (userId, meterData) => {
       
       if (result.success) {
         setModelMetrics(powerConsumptionAI.getModelMetrics())
-        toast.success('AI model trained successfully!')
+        // AI model training happens silently in the background
       } else {
         setError(result.error)
+        // Only show error if training fails
         toast.error('Failed to train AI model')
       }
     } catch (err) {
@@ -49,7 +50,7 @@ export const useAIPredictions = (userId, meterData) => {
       
       if (result.success) {
         setPredictions(result.predictions)
-        toast.success(`Generated ${days}-day consumption predictions`)
+        // Predictions generated silently
       } else {
         setError(result.error)
         toast.error('Failed to generate predictions')
@@ -75,11 +76,7 @@ export const useAIPredictions = (userId, meterData) => {
       
       if (result.success) {
         setAnomalies(result.anomalies)
-        if (result.anomalies.length > 0) {
-          toast.warning(`Found ${result.anomalies.length} consumption anomalies`)
-        } else {
-          toast.success('No anomalies detected - consumption is normal')
-        }
+        // Anomaly detection happens silently
       } else {
         setError(result.error)
         toast.error('Failed to detect anomalies')
@@ -113,7 +110,7 @@ export const useAIPredictions = (userId, meterData) => {
       
       if (result.success) {
         setRecommendations(result.recommendations)
-        toast.success(`Generated ${result.recommendations.length} smart recommendations`)
+        // Recommendations generated silently
       } else {
         setError(result.error)
         toast.error('Failed to generate recommendations')
@@ -159,7 +156,7 @@ export const useAIPredictions = (userId, meterData) => {
         setRecommendations(recommendationsResult.recommendations)
       }
 
-      toast.success('All AI insights generated successfully!')
+      // AI insights generated silently in the background
     } catch (err) {
       setError(err.message)
       toast.error('Error generating AI insights')
@@ -186,12 +183,9 @@ export const useAIPredictions = (userId, meterData) => {
     }
   }, [userId, initializeModel])
 
-  // Auto-generate insights when meter data is available
-  useEffect(() => {
-    if (userId && meterData && modelMetrics?.isTrained) {
-      generateAllInsights()
-    }
-  }, [userId, meterData, modelMetrics, generateAllInsights])
+  // Auto-generate insights when meter data is available (only once)
+  // Removed auto-generation to prevent infinite loops
+  // Insights will be generated when user clicks "View Analytics"
 
   return {
     // Data
